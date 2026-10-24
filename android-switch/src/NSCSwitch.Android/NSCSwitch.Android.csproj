@@ -4,16 +4,14 @@
     <OutputType>Exe</OutputType>
     <UseMaui>true</UseMaui>
     <SingleProject>true</SingleProject>
-    <!-- GitHub Actions APK is sideloaded without adb fast-deployment. -->
-    <!-- Embed every managed assembly to prevent native startup aborts. -->
     <AndroidEnableFastDeployment>false</AndroidEnableFastDeployment>
     <EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <ApplicationTitle>NSC Toolbox Switch</ApplicationTitle>
     <ApplicationId>io.github.anovvoldigoad.nsctoolboxswitch</ApplicationId>
-    <ApplicationDisplayVersion>0.1.1</ApplicationDisplayVersion>
-    <ApplicationVersion>2</ApplicationVersion>
+    <ApplicationDisplayVersion>0.2.0</ApplicationDisplayVersion>
+    <ApplicationVersion>3</ApplicationVersion>
     <SupportedOSPlatformVersion>26</SupportedOSPlatformVersion>
   </PropertyGroup>
   <ItemGroup>
