@@ -33,7 +33,7 @@ public sealed class MainPage : ContentPage
         };
         var subtitle = new Label
         {
-            Text = "Android / Switch 1.70 — NUCC Explorer 0.2.0 (read-only)",
+            Text = "Android / Switch 1.70 — Android Tools 0.3.0",
             TextColor = Colors.LightGray,
             FontSize = 14
         };
@@ -85,6 +85,13 @@ public sealed class MainPage : ContentPage
             tabs.Children.Add(button);
         }
 
+        var swapButton = new Button { Text = "Experimental XFBIN file swap" };
+        swapButton.Clicked += async (_, _) => await Navigation.PushAsync(new SwapPage());
+        var patchButton = new Button { Text = "Expert XFBIN hex patch" };
+        patchButton.Clicked += async (_, _) => await Navigation.PushAsync(new HexPatchPage());
+        var viewerButton = new Button { Text = "3D model & animation viewer (GLB)" };
+        viewerButton.Clicked += async (_, _) => await Navigation.PushAsync(new ViewerPage());
+
         Content = new ScrollView
         {
             Content = new VerticalStackLayout
@@ -93,11 +100,11 @@ public sealed class MainPage : ContentPage
                 Spacing = 15,
                 Children =
                 {
-                    heading, subtitle, _open, _export, _result,
+                    heading, subtitle, swapButton, patchButton, viewerButton, _open, _export, _result,
                     tabs, _search, _entries,
                     new Label
                     {
-                        Text = "Safe mode: no edits, CPK repacking, or gameplay changes.",
+                        Text = "NUCC Explorer remains read-only. Experimental swap and hex patch create separate outputs; gameplay compatibility is unverified.",
                         TextColor = Colors.LightGray,
                         FontSize = 12
                     }
