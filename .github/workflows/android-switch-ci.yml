@@ -41,3 +41,43 @@ jobs:
           name: nsc-toolbox-switch-android-debug
           path: 'android-switch/src/NSCSwitch.Android/bin/Debug/net10.0-android/**/*.apk'
           if-no-files-found: error
+
+  android-startup-smoke:
+    if: github.event_name != 'pull_request'
+    needs: android-debug-apk
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: nsc-toolbox-switch-android-debug
+          path: ./android-apks
+      - name: Enable Android emulator acceleration
+        run: |
+          if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; fi
+      - name: Install and launch on Android emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_5
+          disable-animations: true
+          emulator-boot-timeout: 600
+          script: |
+            set -eu
+            APK=$(find android-apks -type f -name '*.apk' | head -n 1)
+            test -n "$APK"
+            adb install -r "$APK"
+            adb logcat -c
+            adb shell monkey -p io.github.anovvoldigoad.nsctoolboxswitch -c android.intent.category.LAUNCHER 1
+            sleep 12
+            PID=$(adb shell pidof io.github.anovvoldigoad.nsctoolboxswitch | tr -d '\r' || true)
+            if [ -z "$PID" ]; then
+              echo "::error::Android app terminated after launch"
+              adb logcat -d -b crash -v time || true
+              adb logcat -d -v time -s AndroidRuntime:E mono-rt:E monodroid:E DOTNET:E NSCSwitch:E '*:S' || true
+              exit 1
+            fi
+            echo "Android app remains alive (PID $PID)"
