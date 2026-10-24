@@ -1,48 +1,54 @@
-# NSC Toolbox Switch — Android port (read-only alpha 0.2.0)
+# NSC Toolbox Switch for Android — 0.3.0 experimental tools
 
-This independent Android prototype lives **alongside** the original Windows WPF
-application; `main` remains untouched. It targets Naruto x Boruto Ultimate Ninja
-Storm Connections for Nintendo Switch (starting from update 1.70).
+This independent Android prototype lives in `android-switch/` alongside
+the existing Windows WPF toolbox. `main` is not modified.
 
 ## Implemented
 
-- Android .NET MAUI application, native file picker and standalone sideloadable APK.
-- Read-only NUCC/XFBIN header and string-table explorer: NUCC packs, paths, names.
-- Search/filter in each string table, capped UI preview (80 entries) with full JSON export.
-- Bounded metadata parsing (8 MiB limit), big-endian section sizes, truncated input checks,
-  non-seekable Android document stream support.
-- Unit tests for normal/invalid/truncated XFBIN data and Android-style streams.
-- GitHub Actions core tests, APK build and emulator startup smoke test.
+- NUCC / XFBIN inventory explorer: view and search path/name/type string tables.
+- Experimental byte-preserving **whole XFBIN swap** to a new ZIP.
+  Two selected XFBIN filenames are retained but their **entire binary payloads**
+  are exchanged. Internal character IDs, references, costumes, animation
+  routing, parameter and CPK dependencies are **not** rewritten. This is not
+  a validated moveset or model swap and may not be safe to install.
+- Advanced **hex patch** to a new XFBIN, at a user-supplied offset, requiring
+  exact expected old bytes and equal-length new bytes. No named jutsu/combo
+  fields are supported yet. Input files are never modified.
+- Interactive **3D model and animation viewer for self-contained GLB files**.
+  WebGL viewer uses Babylon.js and online loaders over HTTPS; orbit/touch camera,
+  animations and skin/skeleton rendering for compatible GLB models. A 20 MiB
+  file-preview limit protects Android memory.
+- Standalone Android APK, core tests, and emulator startup test on GitHub Actions.
 
-## Not yet implemented
+## Important limitations
 
-- No parameter writes, CPK rebuilding, game mod packaging or ROMFS export.
-- No verified Switch-specific gameplay/animation/moveset format yet.
-- Successful NUCC parsing is not evidence of Switch 1.70 gameplay compatibility.
-- No copyrighted game files or test fixtures are checked into the repository.
+- **Direct XFBIN model/animation preview is NOT implemented.** Input for 3D viewer
+  must already be converted into .glb (glTF binary). The UI must not pretend to
+  show native XFBIN assets.
+- No verified Switch 1.70 parameter serializer, named moveset editor, or
+  cross-character internal reference remapper.
+- No CPK extraction/rebuild or LayeredFS installer in the app yet.
+- Neither whole-file swap nor byte patch ensures a working game mod.
+- Internet connectivity is required for the current Babylon.js viewer.
+- No copyrighted game XFBIN assets are bundled or uploaded.
 
-## How to test on a phone
+## Workflow on Android
 
-1. Download the latest artifact from the **push** GitHub Actions run on the
-   `android-switch/mvp-foundation` branch; pick the standalone **Signed.apk**.
-2. Install / update the application. If Android reports incompatible signing
-   certificates, uninstall the prior test APK first (app-local data will be removed).
-3. Use **Open XFBIN** to select an extracted Switch 1.70 file, not a .cpk.
-4. Switch tabs between NUCC / Paths / Names and try filtering with a keyword.
-5. Use **Share JSON report** to export all parsed entry names. The report does
-   not contain the original binary file. It may still expose resource paths.
-6. For invalid or unusually large metadata, the app displays an error rather
-   than attempting to modify or recover the file.
+1. Download the `nsc-toolbox-switch-android-debug` artifact from a successful
+   **push** workflow run on `android-switch/mvp-foundation`.
+2. Unzip and install `*-Signed.apk`; version 0.3.0.
+3. In the app choose NUCC Explorer, experimental full-file swap, expert hex patch,
+   or GLB preview.
+4. The swap ZIP contains `SWAP_MANIFEST.json` with warnings and maps.
+5. In the viewer, use Play/Pause and choose an animation clip if your GLB
+   includes animations.
 
-## Follow-on implementation
+## Next: true Switch moveset/model swap and native 3D XFBIN playback
 
-- Validate inventory results against actual extracted **stock** Switch 1.70 assets.
-- Build exact parameter schemas with binary round-trip tests, including untouched bytes.
-- Add editable files one format at a time, then CPK rebuild with metadata preservation.
-- Regression-test ROMFS outputs in emulator/on Switch before claiming compatibility.
+Real support requires **actual Switch 1.70** resource samples with known
+relationships (stock and a corresponding modded pair) and verified schemas for
+PRM/animation/body assets. First build round-trip and resource-ID mapping tests,
+then add semantic editors and native mesh/skeleton/animation decoding.
 
-## Upstream and attribution
-
-The upstream NSC Toolbox and XFBIN_LIB repos expose no license in GitHub metadata.
-Get appropriate permission before distributing derivative upstream source/assets;
-this directory is independently implemented cross-platform prototype code.
+Upstream NSC Toolbox and XFBIN_LIB have no license metadata. Seek permission
+before redistributing upstream-derived files and assets.
