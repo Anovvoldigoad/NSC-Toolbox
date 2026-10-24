@@ -1,11 +1,12 @@
 using System.IO.Compression;
+using System.Security.Cryptography;
 using System.Text.Json;
 
 namespace NSCSwitch.Core;
 
 /// <summary>
-/// Byte-for-byte whole-file XFBIN swapping, not an internal moveset remapper.
-/// Source data is never overwritten and game compatibility is not implied.
+/// Experimental whole-XFBIN swap; no internal moveset or character IDs are remapped.
+/// Validates both input containers, writes copies and records exact SHA-256 payloads.
 /// </summary>
 public static class XfbinSwapArchive
 {
@@ -14,60 +15,59 @@ public static class XfbinSwapArchive
         Func<Task<Stream>> openB, string fileNameB,
         Stream destination, CancellationToken ct = default)
     {
-        string a = ValidateName(fileNameA), b = ValidateName(fileNameB);
-        if (string.Equals(a, b, StringComparison.OrdinalIgnoreCase))
-            throw new ArgumentException("Input files must have different filenames.");
+        ArgumentNullException.ThrowIfNull(destination);
         if (!destination.CanWrite)
-            throw new ArgumentException("Output is not writable.");
+            throw new ArgumentException("Output is not writable.", nameof(destination));
 
-        await ValidateAsync(openA, ct);
-        await ValidateAsync(openB, ct);
-        using var zip = new ZipArchive(destination, ZipArchiveMode.Create, true);
-        await AddAsync(zip, "swapped/" + a, openB, ct);
-        await AddAsync(zip, "swapped/" + b, openA, ct);
+        // Fail closed on malformed input before starting a ZIP.
+        var analysis = await XfbinSwapAnalyzer.AnalyzeAsync(
+            openA, fileNameA, openB, fileNameB, ct);
+
+        using var zip = new ZipArchive(destination, ZipArchiveMode.Create, leaveOpen: true);
+        string hashB = await AddAsync(zip, "swapped/" + analysis.FirstFile, openB, ct);
+        string hashA = await AddAsync(zip, "swapped/" + analysis.SecondFile, openA, ct);
+
         var manifest = zip.CreateEntry("SWAP_MANIFEST.json", CompressionLevel.Optimal);
         await using var writer = manifest.Open();
         await JsonSerializer.SerializeAsync(writer, new
         {
-            format = "nsc-switch-xfbin-raw-swap-v1",
-            status = "EXPERIMENTAL_UNVERIFIED",
+            format = "nsc-switch-whole-xfbin-swap-v2",
+            status = "EXPERIMENTAL_NOT_GAME_VERIFIED",
+            sources = new[]
+            {
+                new { sourceFile = analysis.FirstFile, byteLength = analysis.FirstBytes },
+                new { sourceFile = analysis.SecondFile, byteLength = analysis.SecondBytes }
+            },
             replacements = new[]
             {
-                new { output = "swapped/" + a, contains = b },
-                new { output = "swapped/" + b, contains = a }
+                new { output = "swapped/" + analysis.FirstFile, containsSource = analysis.SecondFile, sha256 = hashB },
+                new { output = "swapped/" + analysis.SecondFile, containsSource = analysis.FirstFile, sha256 = hashA }
             },
+            analysis,
             warnings = new[]
             {
-                "Complete XFBIN file bytes are swapped without remapping internal character IDs.",
-                "This is NOT a validated moveset/model swap; dependencies and game compatibility are unknown.",
-                "Original input files are unchanged. Do not install without verifying dependencies.",
-                "No CPK rebuild or ROMFS deployment is included."
+                "This swaps entire XFBIN file bytes; it does not modify referenced character IDs or retarget animations.",
+                "A successful analysis does not imply Switch 1.70 runtime compatibility.",
+                "Output needs independent dependency review, CPK rebuilding and gameplay testing.",
+                "Original files were not overwritten."
             }
         }, cancellationToken: ct);
     }
 
-    private static string ValidateName(string input)
+    private static async Task<string> AddAsync(
+        ZipArchive zip, string path, Func<Task<Stream>> open, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(input) ||
-            input != Path.GetFileName(input) ||
-            !input.EndsWith(".xfbin", StringComparison.OrdinalIgnoreCase) ||
-            input.IndexOfAny(new[] { '/', '\\', ':', '\0' }) >= 0)
-            throw new ArgumentException("Expected a safe .xfbin filename.");
-        return input;
-    }
-
-    private static async Task ValidateAsync(Func<Task<Stream>> open, CancellationToken ct)
-    {
-        await using var stream = await open();
-        _ = await XfbinStreamInspector.InspectAsync(stream, ct);
-    }
-
-    private static async Task AddAsync(ZipArchive archive, string name,
-        Func<Task<Stream>> open, CancellationToken ct)
-    {
-        var entry = archive.CreateEntry(name, CompressionLevel.Fastest);
+        var entry = zip.CreateEntry(path, CompressionLevel.Fastest);
+        using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
         await using var output = entry.Open();
         await using var input = await open();
-        await input.CopyToAsync(output, 64 * 1024, ct);
+        byte[] buffer = new byte[64 * 1024];
+        int n;
+        while ((n = await input.ReadAsync(buffer, ct)) > 0)
+        {
+            hash.AppendData(buffer, 0, n);
+            await output.WriteAsync(buffer.AsMemory(0, n), ct);
+        }
+        return Convert.ToHexString(hash.GetHashAndReset()).ToLowerInvariant();
     }
 }

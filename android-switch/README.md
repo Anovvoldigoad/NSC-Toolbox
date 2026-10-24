@@ -1,4 +1,4 @@
-# NSC Toolbox Switch for Android — 0.3.0 experimental tools
+# NSC Toolbox Switch for Android — 0.3.1 experimental tools
 
 This independent Android prototype lives in `android-switch/` alongside
 the existing Windows WPF toolbox. `main` is not modified.
@@ -6,9 +6,9 @@ the existing Windows WPF toolbox. `main` is not modified.
 ## Implemented
 
 - NUCC / XFBIN inventory explorer: view and search path/name/type string tables.
-- Experimental byte-preserving **whole XFBIN swap** to a new ZIP.
+- **XFBIN swap analyzer**: compare NUCC type, path and name tables before exporting,\n  with truncated previews for differences and explicit warnings.\n- Experimental byte-preserving **whole XFBIN swap** to a new ZIP.
   Two selected XFBIN filenames are retained but their **entire binary payloads**
-  are exchanged. Internal character IDs, references, costumes, animation
+  are exchanged. ZIP manifest includes per-output SHA-256 digests and the\n  analyzer's counts, previews and warnings. Internal character IDs, references, costumes, animation
   routing, parameter and CPK dependencies are **not** rewritten. This is not
   a validated moveset or model swap and may not be safe to install.
 - Advanced **hex patch** to a new XFBIN, at a user-supplied offset, requiring
@@ -36,7 +36,7 @@ the existing Windows WPF toolbox. `main` is not modified.
 
 1. Download the `nsc-toolbox-switch-android-debug` artifact from a successful
    **push** workflow run on `android-switch/mvp-foundation`.
-2. Unzip and install `*-Signed.apk`; version 0.3.0.
+2. Unzip and install `*-Signed.apk`; version 0.3.1.
 3. In the app choose NUCC Explorer, experimental full-file swap, expert hex patch,
    or GLB preview.
 4. The swap ZIP contains `SWAP_MANIFEST.json` with warnings and maps.

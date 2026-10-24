@@ -10,8 +10,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <ApplicationTitle>NSC Toolbox Switch</ApplicationTitle>
     <ApplicationId>io.github.anovvoldigoad.nsctoolboxswitch</ApplicationId>
-    <ApplicationDisplayVersion>0.3.0</ApplicationDisplayVersion>
-    <ApplicationVersion>4</ApplicationVersion>
+    <ApplicationDisplayVersion>0.3.1</ApplicationDisplayVersion>
+    <ApplicationVersion>5</ApplicationVersion>
     <SupportedOSPlatformVersion>26</SupportedOSPlatformVersion>
   </PropertyGroup>
   <ItemGroup>
