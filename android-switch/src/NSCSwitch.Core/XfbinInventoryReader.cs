@@ -41,11 +41,11 @@ public static class XfbinInventoryReader
         uint nuccBytes = Get(header, 0x20);
         uint pathCountRaw = Get(header, 0x24);
         uint pathBytes = Get(header, 0x28);
-        uint nameCount = Get(header, 0x2C);
+        uint nameCountRaw = Get(header, 0x2C);
         uint nameBytes = Get(header, 0x30);
 
         if (nuccCount > MaxEntriesPerTable || pathCountRaw > MaxEntriesPerTable + 1
-            || nameCount > MaxEntriesPerTable)
+            || nameCountRaw > MaxEntriesPerTable + 1)
             throw new InvalidDataException("NUCC string-table entry count exceeds the safety limit.");
 
         ulong stringEnd = (ulong)header.Length + nuccBytes + pathBytes + nameBytes;
@@ -85,9 +85,11 @@ public static class XfbinInventoryReader
         var paths = ReadStrings(metadata.AsSpan(pathStart, (int)pathBytes),
             pathCountRaw > 0 ? pathCountRaw - 1 : 0, 1, "Paths", warnings);
         var names = ReadStrings(metadata.AsSpan(nameStart, (int)nameBytes),
-            nameCount, 1, "Names", warnings);
+            nameCountRaw > 0 ? nameCountRaw - 1 : 0, 1, "Names", warnings);
         if (pathCountRaw == 0)
             warnings.Add("Path count is zero; the expected sentinel entry is absent.");
+        if (nameCountRaw == 0)
+            warnings.Add("Name count is zero; the expected sentinel entry is absent.");
 
         return new XfbinInventory(inspected!, packs, paths, names, warnings);
     }

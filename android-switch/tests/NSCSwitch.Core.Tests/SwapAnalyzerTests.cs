@@ -22,7 +22,7 @@ public class SwapAnalyzerTests
         Put(bytes, 0x20, (uint)packBytes.Length);
         Put(bytes, 0x24, 2);
         Put(bytes, 0x28, (uint)pathBytes.Length);
-        Put(bytes, 0x2C, 1);
+        Put(bytes, 0x2C, 2); // includes sentinel
         Put(bytes, 0x30, (uint)nameBytes.Length);
         packBytes.CopyTo(bytes.AsSpan(0x44));
         pathBytes.CopyTo(bytes.AsSpan(0x44 + packBytes.Length));

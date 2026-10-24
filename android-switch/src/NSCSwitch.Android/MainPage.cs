@@ -33,7 +33,7 @@ public sealed class MainPage : ContentPage
         };
         var subtitle = new Label
         {
-            Text = "Android / Switch 1.70 — Android Tools 0.3.0",
+            Text = "Android / Switch 1.70 — Android Tools 0.3.2",
             TextColor = Colors.LightGray,
             FontSize = 14
         };
@@ -135,6 +135,11 @@ public sealed class MainPage : ContentPage
             _search.Text = "";
 
             var h = inventory.Header;
+            var types = inventory.NuccPacks;
+            string modelTypes = string.Join(", ", new[]
+            {
+                "nuccChunkModel", "nuccChunkClump", "nuccChunkAnm", "nuccChunkCoord"
+            }.Where(t => types.Contains(t, StringComparer.Ordinal)));
             _result.Text =
                 $"File: {_selectedFile}\n" +
                 $"Size: {h.FileLength:N0} bytes\n" +

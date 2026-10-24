@@ -21,7 +21,7 @@ public class XfbinInventoryTests
         Put(data, 0x20, (uint)nucc.Length);
         Put(data, 0x24, 2); // includes sentinel
         Put(data, 0x28, (uint)paths.Length);
-        Put(data, 0x2C, 2);
+        Put(data, 0x2C, 3); // includes sentinel
         Put(data, 0x30, (uint)names.Length);
         Put(data, 0x38, 8);
         Put(data, 0x3C, 3);

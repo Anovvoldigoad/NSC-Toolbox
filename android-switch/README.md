@@ -1,4 +1,4 @@
-# NSC Toolbox Switch for Android — 0.3.1 experimental tools
+# NSC Toolbox Switch for Android — 0.3.2 experimental tools
 
 This independent Android prototype lives in `android-switch/` alongside
 the existing Windows WPF toolbox. `main` is not modified.
@@ -36,7 +36,7 @@ the existing Windows WPF toolbox. `main` is not modified.
 
 1. Download the `nsc-toolbox-switch-android-debug` artifact from a successful
    **push** workflow run on `android-switch/mvp-foundation`.
-2. Unzip and install `*-Signed.apk`; version 0.3.1.
+2. Unzip and install `*-Signed.apk`; version 0.3.2.
 3. In the app choose NUCC Explorer, experimental full-file swap, expert hex patch,
    or GLB preview.
 4. The swap ZIP contains `SWAP_MANIFEST.json` with warnings and maps.
@@ -52,3 +52,14 @@ then add semantic editors and native mesh/skeleton/animation decoding.
 
 Upstream NSC Toolbox and XFBIN_LIB have no license metadata. Seek permission
 before redistributing upstream-derived files and assets.
+
+
+## Switch 1.70 NUCC layout verification
+
+Inspection of 15 extracted XFBIN files from a user-provided dependency archive
+confirmed that table counters at offsets 0x24 and 0x2C include a sentinel
+entry. The NUCC type counter at 0x1C does not. The inventory and header
+readers now expose actual resource string counts, excluding both sentinels.
+The presence of nuccChunkModel, nuccChunkClump or nuccChunkAnm in a file
+only signals a declared chunk type; model/animation decoding is still absent.
+The original game assets are not committed.

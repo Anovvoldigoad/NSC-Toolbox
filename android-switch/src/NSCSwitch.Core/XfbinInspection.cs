@@ -67,7 +67,7 @@ public static class XfbinHeaderReader
 
         inspection = new XfbinInspection(fileLength, nuccCount, nuccSize,
             pathCount > 0 ? pathCount - 1 : 0, pathSize,
-            nameCount, nameSize, bin1Size,
+            nameCount > 0 ? nameCount - 1 : 0, nameSize, bin1Size,
             checked(bin2Words * 4), (long)firstChunk);
         return true;
     }
