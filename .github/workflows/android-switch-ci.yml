@@ -1,0 +1,68 @@
+name: Android Switch proof of concept
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'android-switch/**'
+    paths:
+      - 'android-switch/**'
+      - '.github/workflows/android-switch-ci.yml'
+  pull_request:
+    paths:
+      - 'android-switch/**'
+      - '.github/workflows/android-switch-ci.yml'
+
+jobs:
+  core-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Run XFBIN parsing tests
+        run: dotnet test android-switch/tests/NSCSwitch.Core.Tests/NSCSwitch.Core.Tests.csproj -c Release
+
+  android-debug-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Install .NET MAUI Android workload
+        run: dotnet workload install maui-android
+      - name: Build Android debug APK
+        run: dotnet build android-switch/src/NSCSwitch.Android/NSCSwitch.Android.csproj -f net10.0-android -c Debug -p:AndroidPackageFormat=apk
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: nsc-toolbox-switch-android-debug
+          path: 'android-switch/src/NSCSwitch.Android/bin/Debug/net10.0-android/**/*.apk'
+          if-no-files-found: error
+
+  android-startup-smoke:
+    if: github.event_name != 'pull_request'
+    needs: android-debug-apk
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: nsc-toolbox-switch-android-debug
+          path: ./android-apks
+      - name: Enable Android emulator acceleration
+        run: |
+          if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; fi
+      - name: Install and launch on Android emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_5
+          disable-animations: true
+          emulator-boot-timeout: 600
+          script: bash android-switch/scripts/android-smoke.sh
