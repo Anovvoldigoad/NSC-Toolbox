@@ -33,7 +33,7 @@ public sealed class MainPage : ContentPage
         };
         var subtitle = new Label
         {
-            Text = "Android / Switch 1.70 — Android Tools 0.3.2",
+            Text = "Android / Switch 1.70 — Android Tools 0.4.0",
             TextColor = Colors.LightGray,
             FontSize = 14
         };
@@ -87,6 +87,8 @@ public sealed class MainPage : ContentPage
 
         var swapButton = new Button { Text = "Experimental XFBIN file swap" };
         swapButton.Clicked += async (_, _) => await Navigation.PushAsync(new SwapPage());
+        var chunkButton = new Button { Text = "XFBIN resource chunk browser" };
+        chunkButton.Clicked += async (_, _) => await Navigation.PushAsync(new ChunkBrowserPage());
         var patchButton = new Button { Text = "Expert XFBIN hex patch" };
         patchButton.Clicked += async (_, _) => await Navigation.PushAsync(new HexPatchPage());
         var viewerButton = new Button { Text = "3D model & animation viewer (GLB)" };
@@ -100,7 +102,7 @@ public sealed class MainPage : ContentPage
                 Spacing = 15,
                 Children =
                 {
-                    heading, subtitle, swapButton, patchButton, viewerButton, _open, _export, _result,
+                    heading, subtitle, swapButton, chunkButton, patchButton, viewerButton, _open, _export, _result,
                     tabs, _search, _entries,
                     new Label
                     {

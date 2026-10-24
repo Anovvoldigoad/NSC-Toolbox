@@ -1,4 +1,4 @@
-# NSC Toolbox Switch for Android — 0.3.2 experimental tools
+# NSC Toolbox Switch for Android — 0.4.0 experimental tools
 
 This independent Android prototype lives in `android-switch/` alongside
 the existing Windows WPF toolbox. `main` is not modified.
@@ -36,7 +36,7 @@ the existing Windows WPF toolbox. `main` is not modified.
 
 1. Download the `nsc-toolbox-switch-android-debug` artifact from a successful
    **push** workflow run on `android-switch/mvp-foundation`.
-2. Unzip and install `*-Signed.apk`; version 0.3.2.
+2. Unzip and install `*-Signed.apk`; version 0.4.0.
 3. In the app choose NUCC Explorer, experimental full-file swap, expert hex patch,
    or GLB preview.
 4. The swap ZIP contains `SWAP_MANIFEST.json` with warnings and maps.
@@ -63,3 +63,18 @@ readers now expose actual resource string counts, excluding both sentinels.
 The presence of nuccChunkModel, nuccChunkClump or nuccChunkAnm in a file
 only signals a declared chunk type; model/animation decoding is still absent.
 The original game assets are not committed.
+
+
+## XFBIN resource chunks (read-only 0.4.0)
+
+- **Resource Chunk Browser** enumerates actual chunk headers across NUCC pages,
+  resolves type/name/path via the binary map, and reports data offsets and lengths.
+- Works with streaming Android file-picker input without loading the complete XFBIN
+  into memory, with metadata and individual chunk size limits.
+- Allows exporting **individual raw chunk payloads** to `.bin` for offline analysis.
+  It does not turn model or animation chunks into renderable 3D objects.
+- Tested against synthetic fixtures modelling real Switch chunk/page layouts;
+  15 real user-supplied Switch 1.70 XFBIN samples were independently inspected
+  without committing copyrighted assets.
+- Corrects first-chunk offset calculation to include 8 bytes for each
+  extra NUCC mapping (header 0x40), which is needed for effect/model XFBINs.

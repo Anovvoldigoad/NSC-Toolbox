@@ -49,6 +49,7 @@ public static class XfbinHeaderReader
         uint nameSize = Read(header, 0x30);
         uint bin1Size = Read(header, 0x38);
         uint bin2Words = Read(header, 0x3C);
+        uint extraMappings = Read(header, 0x40);
 
         if (bin2Words > uint.MaxValue / 4)
         {
@@ -58,7 +59,7 @@ public static class XfbinHeaderReader
 
         ulong tablesEnd = (ulong)HeaderLength + nuccSize + pathSize + nameSize;
         ulong paddedTablesEnd = (tablesEnd + 3UL) & ~3UL;
-        ulong firstChunk = paddedTablesEnd + bin1Size + ((ulong)bin2Words * 4UL);
+        ulong firstChunk = paddedTablesEnd + bin1Size + ((ulong)bin2Words * 4UL) + ((ulong)extraMappings * 8UL);
         if (tablesEnd > (ulong)fileLength || firstChunk > (ulong)fileLength)
         {
             error = "XFBIN metadata section sizes exceed file length.";
