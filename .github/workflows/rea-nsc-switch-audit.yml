@@ -1,4 +1,4 @@
-name: Auto-audit latest ModdingAPI with REA
+name: Audit current ModdingAPI with REA and PE inventory
 on:
   pull_request:
     branches: [main]
@@ -14,37 +14,75 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Install REA and RAR extractor
+      - name: Install static analyzers
         run: |
+          set -euo pipefail
           sudo apt-get update -qq
-          sudo apt-get install -y p7zip-full
-          npm install -g rea-agents
-      - name: Fetch official latest release; no user-supplied DLL needed
-        env:
-          GH_TOKEN: ${{ github.token }}
+          sudo apt-get install -y p7zip-full python3-venv
+          python3 -m venv /tmp/nsc-pe-env
+          /tmp/nsc-pe-env/bin/pip install --disable-pip-version-check pefile
+          npm install -g rea-agents@latest
+          rea --help > /tmp/rea-help.txt
+          grep -q 'inspect-managed-artifact' /tmp/rea-help.txt
+      - name: Download current official NSC Mod Manager release
         run: |
           set -euo pipefail
-          mkdir -p audit/input audit/report
-          VERSION=$(gh api repos/TheLeonX/NSC-ModManager/releases/latest --jq .tag_name)
-          gh release download "$VERSION" -R TheLeonX/NSC-ModManager -p 'NSC-ModManager.rar' -D audit/input
-          7z x -y -bd audit/input/NSC-ModManager.rar -oaudit/input/unpacked >/dev/null
-          printf 'Release: %s\n' "$VERSION" >audit/report/metadata.txt
-      - name: Inspect shipped binaries with REA
+          mkdir -p audit/unpacked audit/reports
+          python3 - <<'PY'
+          import json,urllib.request,os,hashlib,urllib.parse
+          api='https://api.github.com/repos/TheLeonX/NSC-ModManager/releases/latest'
+          headers={'Accept':'application/vnd.github+json','User-Agent':'NSC-Switch-Audit'}
+          with urllib.request.urlopen(urllib.request.Request(api,headers=headers),timeout=40) as resp:
+              release=json.load(resp)
+          matches=[x for x in release.get('assets',[]) if x.get('name')=='NSC-ModManager.rar']
+          if len(matches)!=1:raise RuntimeError('Release missing unique official archive')
+          asset=matches[0];size=asset['size'];url=asset['browser_download_url']
+          parsed=urllib.parse.urlparse(url)
+          if parsed.scheme!='https' or parsed.netloc!='github.com' or not parsed.path.startswith('/TheLeonX/NSC-ModManager/releases/download/'):
+              raise RuntimeError('Unexpected upstream download URL')
+          if not 0<size<256*2**20:raise RuntimeError('Official archive size outside allowed range')
+          h=hashlib.sha256();count=0
+          with urllib.request.urlopen(urllib.request.Request(url,headers={'User-Agent':'NSC-Switch-Audit'}),timeout=180) as src,open('audit/latest.rar','wb') as out:
+              while (b:=src.read(1<<20)):
+                  count+=len(b)
+                  if count>size:raise RuntimeError('Overlong upstream archive')
+                  h.update(b);out.write(b)
+          if count!=size:raise RuntimeError('Truncated release archive')
+          digest=asset.get('digest')
+          if digest and digest.startswith('sha256:') and digest.split(':',1)[1].lower()!=h.hexdigest():
+              raise RuntimeError('Release asset SHA256 mismatch')
+          with open('audit/reports/upstream.json','w') as f:
+              json.dump({'release':release['tag_name'],'published_at':release['published_at'],'bytes':count,'sha256':h.hexdigest()},f,indent=2)
+          PY
+          7z x -y -bd audit/latest.rar -oaudit/unpacked > /dev/null
+      - name: Inspect actual PE imports and exports
         run: |
           set -euo pipefail
-          while IFS= read -r -d '' candidate; do
-            label=$(echo "$candidate" | sha256sum | cut -c1-12)
-            sha256sum "$candidate" >>audit/report/sha256.txt
-            rea inspect-pe-imports "$candidate" --json > "audit/report/${label}_imports.json" 2>&1 || true
-            rea inspect-native-exports "$candidate" --json > "audit/report/${label}_exports.json" 2>&1 || true
-            if [[ "$candidate" == *ModManager.exe ]]; then
-              rea inspect-managed-artifact "$candidate" --json > "audit/report/${label}_managed.json" 2>&1 || true
-              rea inspect-managed-members "$candidate" --detail summary --evidence-bundle "$PWD/audit/report/${label}_members.json" --json > "audit/report/${label}_member_index.json" 2>&1 || true
-            fi
-          done < <(find audit/input/unpacked -type f \( -iname 'd3dcompiler_47.dll' -o -iname 'CPKLoader.dll' -o -iname 'EncryptCPK.dll' -o -iname '*ModManager.exe' \) -print0)
-      - uses: actions/upload-artifact@v4
+          /tmp/nsc-pe-env/bin/python .github/scripts/inspect_pe_upstream.py audit/unpacked audit/reports
+      - name: REA managed assembly metadata and compiler class CIL
+        run: |
+          set -euo pipefail
+          MANAGED="$(cat audit/reports/managed_path.txt)"
+          rea inspect-managed-artifact "$MANAGED" --json > audit/reports/manager_managed.json
+          python3 - <<'PY'
+          import json
+          j=json.load(open('audit/reports/manager_managed.json'))
+          if 'code' in j:raise RuntimeError('REA error: '+str(j))
+          status=j.get('normalized_result',{}).get('classification',{}).get('status')
+          if status!='managed':raise RuntimeError('REA did not identify the target as a managed DLL: '+str(status))
+          PY
+          rea inspect-managed-members "$MANAGED" --type NSC_ModManager.ViewModel.TitleViewModel --json > audit/reports/title_viewmodel_methods.json
+          python3 - <<'PY'
+          import json
+          j=json.load(open('audit/reports/title_viewmodel_methods.json'))
+          if 'code' in j:raise RuntimeError('REA member inspection error: '+str(j))
+          if not j.get('normalized_result'):raise RuntimeError('REA member result missing normalized facts')
+          PY
+      - name: Publish metadata, not third-party binaries
+        uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: REA-upstream-binary-audit
-          path: audit/report/
+          name: REA-and-PE-actual-binary-audit
+          path: audit/reports/
+          if-no-files-found: warn
           retention-days: 14
