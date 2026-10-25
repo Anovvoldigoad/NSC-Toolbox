@@ -5,6 +5,7 @@ import ghidra.app.script.GhidraScript;
 import ghidra.app.decompiler.DecompInterface;
 import ghidra.app.decompiler.DecompileResults;
 import ghidra.program.model.listing.Function;
+import ghidra.program.model.symbol.Symbol;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.util.HashSet;
@@ -28,7 +29,16 @@ public class ExportHooks extends GhidraScript {
             for (Function func : currentProgram.getFunctionManager().getFunctions(true)) {
                 if (monitor.isCancelled()) break;
                 String name = func.getName();
-                if (!keep.contains(name) && !name.startsWith("DllMain")) continue;
+                boolean selected = keep.contains(name) || name.startsWith("DllMain");
+                if (!selected) {
+                    for (Symbol symbol : currentProgram.getSymbolTable().getSymbols(func.getEntryPoint())) {
+                        if (keep.contains(symbol.getName())) {
+                            selected = true;
+                            break;
+                        }
+                    }
+                }
+                if (!selected) continue;
                 found++;
                 out.write("\n/* Export " + name + " @ " + func.getEntryPoint() + " */\n");
                 try {
