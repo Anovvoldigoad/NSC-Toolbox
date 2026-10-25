@@ -1,5 +1,7 @@
 name: Auto-audit latest ModdingAPI with REA
 on:
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 permissions:
   contents: read
@@ -39,7 +41,7 @@ jobs:
               rea inspect-managed-artifact "$candidate" --json > "audit/report/${label}_managed.json" 2>&1 || true
               rea inspect-managed-members "$candidate" --detail summary --evidence-bundle "$PWD/audit/report/${label}_members.json" --json > "audit/report/${label}_member_index.json" 2>&1 || true
             fi
-          done < <(find audit/input/unpacked -type f \( -iname 'd3dcompiler_47.dll' -o -iname 'CPKLoader.dll' -o -iname 'EncryptCPK.dll' -o -iname '*ModManager.exe' \) -print0 | head -z -n 20)
+          done < <(find audit/input/unpacked -type f \( -iname 'd3dcompiler_47.dll' -o -iname 'CPKLoader.dll' -o -iname 'EncryptCPK.dll' -o -iname '*ModManager.exe' \) -print0)
       - uses: actions/upload-artifact@v4
         if: always()
         with:
