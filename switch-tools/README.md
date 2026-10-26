@@ -1,4 +1,4 @@
-# NSC Switch CPK Builder v0.7 — Android/Termux
+# NSC Switch CPK Builder v0.8 — Android/Termux
 
 Target: Naruto x Boruto Ultimate Ninja Storm Connections, Switch update 1.70.
 
@@ -12,10 +12,39 @@ These programs are Python 3 **standard-library-only**. They do not require a PC 
 - Detect PC character or ModdingAPI dependencies and refuse a supposedly playable build.
 - With separately installed Android-native FastCPK utilities, unpack, replace, rebuild, re-extract and SHA256-verify replacement bytes for **multiple** CPK files before atomically publishing a RomFS tree (`build_cpks.py`).
 - Reject overwrites and keep original stock CPK files untouched.
+- Verify **every untouched XFBIN** after repacking and the complete file-table set, not only the assets modified by the mod.
+- Discover original CPKs automatically from an extracted RomFS directory and choose only affected archives (`auto_compile.py`).
+- Run actual FastCPK encrypted/CRILAYLA integration tests on synthetic stock archives in GitHub Actions.
 
 ## Requirements
 
 Run in Termux with `pkg install python`. The `build_cpks.py` command additionally requires FastCPK and fastcpk-rebuild **already built for Android**. The official source is https://github.com/Al-Hydra/FastCPK. Specify the real executable paths: do not copy a Windows .exe into Android.
+
+## Recommended: automatic CPK discovery from your entire extracted RomFS
+
+You no longer need to list each stock CPK. The scan walks \`romfs/data/**/*.cpk\` and fails closed when more than one archive contains the same target resource; it **does not guess** which CPK has higher engine priority.
+
+First, preview exact routes without changing any game data:
+
+\`\`\`bash
+python auto_compile.py \
+  --romfs-root "/storage/emulated/0/Download/SWITCH/EXTRACTED_GAME/READY_TO_MOD/romfs" \
+  --mod "/storage/emulated/0/Download/YOUR_MOD.nsc" \
+  --dry-run --output "/storage/emulated/0/Download/NSC_ROUTE_AUDIT.json"
+\`\`\`
+
+For resource-only mods that report no missing, ambiguous, or unported dependencies, build:
+
+\`\`\`bash
+python auto_compile.py \
+  --romfs-root "/storage/emulated/0/Download/SWITCH/EXTRACTED_GAME/READY_TO_MOD/romfs" \
+  --mod "/storage/emulated/0/Download/YOUR_MOD.nsc" \
+  --fastcpk "$HOME/.cache/naruto-fastcpk/target/release/fastcpk" \
+  --rebuild "$HOME/.cache/naruto-fastcpk/target/release/fastcpk-rebuild" \
+  --output "/storage/emulated/0/Download/NSC_SWITCH_OUTPUT"
+\`\`\`
+
+Repeat \`--mod\` for multiple compatible mods. **Never install** if the report has a missing/ambiguous resource or unported ModdingAPI dependency. \`--allow-unported\` is a research-only override and does not make an unsupported mod playable.
 
 ## Index one archive
 
@@ -53,9 +82,10 @@ For multiple CPKs, repeat `--cpk` and matching `--romfs` options **in the same o
 ## Verification and limitations
 
 - Offline CI tests cover synthetic TOC, missing/duplicate resources, collision checks, and mocked FastCPK extraction/repack transaction handling.
+- **Real tool integration:** GitHub Actions compiles FastCPK from pinned source commit `c6eb387d49efea010518446abb8cb7e8418a1e6a`, produces encrypted/compressed synthetic CPKs, rebuilds two CPKs, re-extracts them, and checks both replaced and untouched XFBIN bytes.
 - The local parser was independently exercised against a user-supplied 118,842,856-byte `common.cpk` with **489 indexed entries**.
 - The user-supplied Isshiki mod has 28 loose candidate XFBIN in `Resources/Files`; 2 map to that one CPK. This DOES NOT mean only two XFBIN are valid globally.
-- **No runtime gameplay test has been performed.** FastCPK has not been run with an authentic complete stock archive set in this integration.
+- **No runtime gameplay test has been performed.** The complete authentic set of original game CPKs has not been rebuilt and boot-tested in this integration.
 - Full Windows ModdingAPI v2.1.2.1 is **not** ported to Switch ARM64; MovesetPlus, PC runtime DLLs, Lua hooks, scene transitions and projectile control are still missing.
 - The output is **NOT an IPS patch**. For code modifications, a separately implemented ARM64 runtime or a verified build-ID-specific IPS is required. Atmosphere IPS patches apply to the **uncompressed** NSO representation, not directly to the compressed source.
 
