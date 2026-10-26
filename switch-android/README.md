@@ -1,6 +1,6 @@
-# NSC Switch Compiler Android v0.5-native-preview
+# NSC Switch Compiler Android v0.6-native-preview
 
-Buildable native APK (no PC needed for using the installed APK). Select a ZIP-based .nsc/.zip mod or a verified common.cpk; save a ZIP with Atmosphere-style paths, staged unsupported PC assets, and COMPILER_REPORT.json.
+Buildable native APK (no PC needed for using the installed APK). Select one or multiple ZIP-based .nsc/.zip mods or verified common.cpk archives; save a ZIP with Atmosphere-style paths, staged unsupported PC assets, SHA-256 collision detection, and COMPILER_REPORT.json.
 
 This is **not** a full ModdingAPI port. All Windows DLL/native-hook-dependent content stays under STAGING and is marked BLOCKED_UNPORTED_RESOURCES. IPS is deliberately not accepted in this APK because validation against the original NSO is required.
 
