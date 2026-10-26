@@ -62,6 +62,23 @@ jobs:
             grep -q 'selected_functions=' "analysis/reports/$name.c"
             if grep -q 'selected_functions=0' "analysis/reports/$name.c"; then exit 1; fi
           done
+      - name: Reverse-engineer current PC ModdingAPI gameplay string references
+        run: |
+          set -euo pipefail
+          headless=$(find analysis/ghidra -path '*/support/analyzeHeadless' -type f -print -quit)
+          test -n "$headless"
+          runtime=$(find analysis/input/upstream -type f -name 'd3dcompiler_47.dll' -print -quit)
+          test -n "$runtime"
+          sha256sum "$runtime" >> analysis/reports/source-hashes.txt
+          "$headless" "$PWD/analysis/projects" "runtime_string_references" \
+            -import "$PWD/$runtime" \
+            -scriptPath "$PWD/tools/ghidra" \
+            -postScript RuntimeStringHooks.java "$PWD/analysis/reports/runtime_gameplay_references.c" \
+            -analysisTimeoutPerFile 600 \
+            -max-cpu 2 \
+            -deleteProject \
+            > "analysis/reports/runtime_ghidra.log" 2>&1
+          grep -q 'analyzed_functions=' "analysis/reports/runtime_gameplay_references.c"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
