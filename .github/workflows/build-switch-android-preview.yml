@@ -25,7 +25,7 @@ jobs:
           gradle-version: '8.10.2'
       - name: Build debug APK
         working-directory: switch-android
-        run: gradle --no-daemon --stacktrace assembleDebug
+        run: gradle --no-daemon --stacktrace testDebugUnitTest assembleDebug
       - name: Validate generated APK
         run: |
           set -euo pipefail
