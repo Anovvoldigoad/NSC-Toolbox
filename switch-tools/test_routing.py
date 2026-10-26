@@ -87,6 +87,17 @@ class ParserTests(unittest.TestCase):
             t=Path(d);a=cpk(t,'a.cpk',['data/spc/a.xfbin'])
             m=nsc(t,'one.nsc',{'data/../../../a.xfbin':b'A'})
             with self.assertRaises(FormatError):route([m],[a])
+    def test_pc_lua_script_not_treated_as_cpk_only(self):
+        with tempfile.TemporaryDirectory() as d:
+            t=Path(d);a=cpk(t,'one.cpk',['data/spc/a.xfbin'])
+            mod=t/'scripted.nsc'
+            with zipfile.ZipFile(mod,'w') as z:
+                z.writestr('Resources/Files/data/spc/a.xfbin',b'NUCC')
+                z.writestr('Scripts/moveset.lua','function main() end')
+            report=route([mod],[a])
+            self.assertEqual(report['status'],'BLOCKED_UNPORTED_MODDINGAPI')
+            self.assertEqual(len(report['unported_runtime_dependencies']),1)
+
     def test_malformed_cpk_refused(self):
         with tempfile.TemporaryDirectory() as d:
             t=Path(d);bad=t/'bad.cpk';bad.write_bytes(b'CPK ')
