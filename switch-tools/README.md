@@ -22,29 +22,29 @@ Run in Termux with `pkg install python`. The `build_cpks.py` command additionall
 
 ## Recommended: automatic CPK discovery from your entire extracted RomFS
 
-You no longer need to list each stock CPK. The scan walks \`romfs/data/**/*.cpk\` and fails closed when more than one archive contains the same target resource; it **does not guess** which CPK has higher engine priority.
+You no longer need to list each stock CPK. The scan walks `romfs/data/**/*.cpk` and fails closed when more than one archive contains the same target resource; it **does not guess** which CPK has higher engine priority.
 
 First, preview exact routes without changing any game data:
 
-\`\`\`bash
+```bash
 python auto_compile.py \
   --romfs-root "/storage/emulated/0/Download/SWITCH/EXTRACTED_GAME/READY_TO_MOD/romfs" \
   --mod "/storage/emulated/0/Download/YOUR_MOD.nsc" \
   --dry-run --output "/storage/emulated/0/Download/NSC_ROUTE_AUDIT.json"
-\`\`\`
+```
 
 For resource-only mods that report no missing, ambiguous, or unported dependencies, build:
 
-\`\`\`bash
+```bash
 python auto_compile.py \
   --romfs-root "/storage/emulated/0/Download/SWITCH/EXTRACTED_GAME/READY_TO_MOD/romfs" \
   --mod "/storage/emulated/0/Download/YOUR_MOD.nsc" \
   --fastcpk "$HOME/.cache/naruto-fastcpk/target/release/fastcpk" \
   --rebuild "$HOME/.cache/naruto-fastcpk/target/release/fastcpk-rebuild" \
   --output "/storage/emulated/0/Download/NSC_SWITCH_OUTPUT"
-\`\`\`
+```
 
-Repeat \`--mod\` for multiple compatible mods. **Never install** if the report has a missing/ambiguous resource or unported ModdingAPI dependency. \`--allow-unported\` is a research-only override and does not make an unsupported mod playable.
+Repeat `--mod` for multiple compatible mods. **Never install** if the report has a missing/ambiguous resource or unported ModdingAPI dependency. `--allow-unported` is a research-only override and does not make an unsupported mod playable.
 
 ## Index one archive
 
