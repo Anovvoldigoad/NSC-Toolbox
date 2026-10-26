@@ -64,6 +64,10 @@ def plan(mods, romfs_root):
 
 
 def build_auto(mods, romfs_root, fastcpk, rebuild, output, *, allow_unported=False):
+    root=Path(romfs_root).resolve(strict=True)
+    destination=Path(output).expanduser().resolve()
+    if destination==root or destination.is_relative_to(root):
+        raise FormatError("Output must be outside the original extracted game RomFS")
     result = plan(mods, romfs_root)
     if result["missing_resources"] or result["ambiguous_resources"]:
         raise FormatError("Missing or ambiguous resources; see dry-run report")
