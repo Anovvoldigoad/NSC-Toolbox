@@ -54,6 +54,14 @@ class AutoRouteTests(unittest.TestCase):
             with self.assertRaises(FormatError):
                 discover_romfs(d)
 
+    def test_refuse_output_inside_original_romfs(self):
+        with tempfile.TemporaryDirectory() as d:
+            t=Path(d);root=self.make_romfs(t)
+            cpk(root/"data"/"patch"/"170","common.cpk",["data/spc/a.xfbin"])
+            mod=nsc(t,"one.nsc",{"data/spc/a.xfbin":b"A"})
+            with self.assertRaisesRegex(FormatError,"outside"):
+                build_auto([mod],root,__file__,__file__,root/"compilation")
+
     def test_no_cpk(self):
         with tempfile.TemporaryDirectory() as d:
             t=Path(d);root=self.make_romfs(t)
