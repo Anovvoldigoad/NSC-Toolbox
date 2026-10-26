@@ -27,7 +27,7 @@ jobs:
         working-directory: switch-tools
         run: |
           set -euo pipefail
-          python3 -m unittest -v test_routing.py test_build_cpks.py
+          python3 -m unittest -v test_routing.py test_build_cpks.py test_auto_compile.py
       - name: Genuine FastCPK end-to-end encrypted CPK round-trip
         working-directory: switch-tools
         run: |
