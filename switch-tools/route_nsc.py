@@ -38,8 +38,11 @@ def route(mods,cpks):
                 if info.flag_bits&1:raise FormatError("Encrypted archive unsupported")
                 if info.file_size<0 or info.file_size>(1<<30):
                     raise FormatError("ZIP expanded file size outside safe limit")
-                if key.startswith("characters/") or "/moddingapi/" in key or key.endswith(".dll"):
-                    runtime.append({"mod":p.name,"path":raw,"reason":"PC-native/character dependency"})
+                if (key.startswith(("characters/","scripts/","plugins/","moddingapi/"))
+                        or "/moddingapi/" in key
+                        or key.endswith((".dll",".asi",".lua",".exe"))):
+                    runtime.append({"mod":p.name,"path":raw,
+                                    "reason":"PC-native/character/script dependency"})
                 prefix="resources/files/"
                 if not (key.startswith(prefix) and key.endswith(".xfbin")):continue
                 virtual=normalized(raw[len(prefix):]);target=virtual.casefold()
