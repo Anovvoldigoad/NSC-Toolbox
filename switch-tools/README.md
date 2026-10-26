@@ -15,6 +15,7 @@ These programs are Python 3 **standard-library-only**. They do not require a PC 
 - Verify **every untouched XFBIN** after repacking and the complete file-table set, not only the assets modified by the mod.
 - Discover original CPKs automatically from an extracted RomFS directory and choose only affected archives (`auto_compile.py`).
 - Run actual FastCPK encrypted/CRILAYLA integration tests on synthetic stock archives in GitHub Actions.
+- Check the existing ARM64 native hook fingerprints and Switch v1.70 executable Build ID before attempting any code patch (`nso_170_guard.py`).
 
 ## Requirements
 
@@ -46,6 +47,17 @@ python auto_compile.py \
 
 Repeat `--mod` for multiple compatible mods. **Never install** if the report has a missing/ambiguous resource or unported ModdingAPI dependency. `--allow-unported` is a research-only override and does not make an unsupported mod playable.
 
+## ARM64 runtime prerequisite: verify the exact Switch 1.70 executable
+
+The read-only verifier checks Build ID prefix `48ece454b61412b9fb46fab2be3f5ef7b2804f39` and eight ARM64 instruction signatures from the existing P32 native hook source. It accepts the original extracted `main` NSO or a ZIP containing `main` (e.g. a previously saved executable archive). It **does not patch, boot, or implement ModdingAPI**. Incorrect game revisions, offsets, and failed LZ4 decompression are rejected.
+
+```bash
+python nso_170_guard.py \
+  --nso '/storage/emulated/0/Download/minato_main_170.zip' \
+  --output '/storage/emulated/0/Download/NSO_170_HOOK_AUDIT.json'
+```
+
+Exit status 0 means only the earlier P32 fingerprint and Build ID checks passed; gameplay/runtime remain untested. Exit status 2 means the executable was rejected. The main source and all IPS files are left untouched.
 ## Index one archive
 
 ```bash
