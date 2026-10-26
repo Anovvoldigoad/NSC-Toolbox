@@ -1,0 +1,65 @@
+name: Build Native NSC Switch Android Preview APK
+on:
+  pull_request:
+    paths:
+      - 'switch-android/**'
+      - '.github/workflows/build-switch-android-preview.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools platforms;android-35 build-tools;35.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+      - name: Build debug APK
+        working-directory: switch-android
+        run: gradle --no-daemon --stacktrace testDebugUnitTest assembleDebug
+      - name: Validate generated APK
+        run: |
+          set -euo pipefail
+          apk=switch-android/app/build/outputs/apk/debug/app-debug.apk
+          test -s "$apk"
+          unzip -t "$apk" | tail -1
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$apk"
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$apk" | grep -E '^(package:|sdkVersion:|targetSdkVersion:)'
+          sha256sum "$apk" > switch-android/app/build/outputs/apk/debug/SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NSC-Switch-Android-v06-Preview-APK
+          path: |
+            switch-android/app/build/outputs/apk/debug/app-debug.apk
+            switch-android/app/build/outputs/apk/debug/SHA256SUMS.txt
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NSC-Switch-Android-v06-Source
+          path: |
+            switch-android/settings.gradle
+            switch-android/gradle.properties
+            switch-android/build.gradle
+            switch-android/app/build.gradle
+            switch-android/app/src/main/AndroidManifest.xml
+            switch-android/app/src/main/java/io/nsc/switchcompiler/MainActivity.java
+            switch-android/app/src/main/java/io/nsc/switchcompiler/Packager.java
+            switch-android/app/src/test/java/io/nsc/switchcompiler/PackagerTest.java
+            switch-android/README.md
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: NSC-Switch-Android-v06-Test-Results
+          path: switch-android/app/build/test-results/testDebugUnitTest/
+          retention-days: 14
+          if-no-files-found: ignore
