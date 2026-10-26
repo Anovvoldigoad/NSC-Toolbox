@@ -1,0 +1,16 @@
+plugins { id 'com.android.application' }
+android {
+    namespace 'io.nsc.switchcompiler'
+    compileSdk 35
+    defaultConfig {
+        applicationId 'io.nsc.switchcompiler'
+        minSdk 26
+        targetSdk 35
+        versionCode 5
+        versionName '0.5-native-preview'
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
