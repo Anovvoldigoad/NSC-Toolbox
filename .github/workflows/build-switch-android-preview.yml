@@ -37,14 +37,14 @@ jobs:
           sha256sum "$apk" > switch-android/app/build/outputs/apk/debug/SHA256SUMS.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: NSC-Switch-Android-v05-Preview-APK
+          name: NSC-Switch-Android-v06-Preview-APK
           path: |
             switch-android/app/build/outputs/apk/debug/app-debug.apk
             switch-android/app/build/outputs/apk/debug/SHA256SUMS.txt
           retention-days: 14
       - uses: actions/upload-artifact@v4
         with:
-          name: NSC-Switch-Android-v05-Source
+          name: NSC-Switch-Android-v06-Source
           path: |
             switch-android/settings.gradle
             switch-android/build.gradle
