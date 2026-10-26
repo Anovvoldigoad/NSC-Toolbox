@@ -65,7 +65,7 @@ def route(mods,cpks):
                         raise FormatError("Mod collision for "+virtual)
                     duplicates+=1;continue
                 replacements[target]={"virtual_path":virtual,"cpk":matches[0],
-                                      "mod":p.name,"zip_entry":raw,"bytes":size,"sha256":h.hexdigest()}
+                                      "mod":p.name,"zip_entry":info.filename,"bytes":size,"sha256":h.hexdigest()}
     grouped={}
     for value in replacements.values():grouped.setdefault(value["cpk"],[]).append(value)
     for rows in grouped.values():rows.sort(key=lambda x:x["virtual_path"].casefold())
