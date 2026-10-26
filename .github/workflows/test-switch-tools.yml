@@ -17,7 +17,7 @@ jobs:
           python-version: '3.12'
       - name: Static routing tests
         working-directory: switch-tools
-        run: python -m unittest -v test_routing test_build_cpks
+        run: python -m unittest -v test_routing test_build_cpks test_auto_compile
       - name: Validate Python sources
         working-directory: switch-tools
         run: python -m compileall -q .
@@ -25,11 +25,11 @@ jobs:
         run: |
           set -eu
           mkdir -p output/switch-tools
-          cp switch-tools/{cpk_inventory.py,route_nsc.py,build_cpks.py,test_routing.py,test_build_cpks.py,README.md} output/switch-tools/
-          printf '%s\n' 'Requires stock Switch CPK(s); will refuse unknown, duplicate and PC-runtime assets.' > output/switch-tools/README.txt
-          cd output && zip -qr ../NSC_Switch_CPK_Router_v07.zip switch-tools
+          cp switch-tools/{cpk_inventory.py,route_nsc.py,build_cpks.py,auto_compile.py,test_routing.py,test_build_cpks.py,test_auto_compile.py,test_real_fastcpk.py,README.md} output/switch-tools/
+          printf '%s\n' 'Use auto_compile.py --romfs-root to discover stock CPKs automatically; requires FastCPK on Android. ModdingAPI ARM64 remains unported.' > output/switch-tools/README.txt
+          cd output && zip -qr ../NSC_Switch_CPK_Router_v08.zip switch-tools
       - uses: actions/upload-artifact@v4
         with:
-          name: NSC-Switch-CPK-Router-v07-source
-          path: NSC_Switch_CPK_Router_v07.zip
+          name: NSC-Switch-CPK-Router-v08-source
+          path: NSC_Switch_CPK_Router_v08.zip
           retention-days: 14
