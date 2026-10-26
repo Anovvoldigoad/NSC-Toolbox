@@ -1,0 +1,45 @@
+name: Verify Switch CPK compiler with real FastCPK
+on:
+  pull_request:
+    paths:
+      - 'switch-tools/**'
+      - '.github/workflows/test-switch-cpk-real.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  genuine-fastcpk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up known FastCPK source and reproducible toolchain
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/Al-Hydra/FastCPK.git /tmp/fastcpk
+          cd /tmp/fastcpk
+          git checkout --detach c6eb387d49efea010518446abb8cb7e8418a1e6a
+          test "$(git rev-parse HEAD)" = c6eb387d49efea010518446abb8cb7e8418a1e6a
+          cargo build --release --bins
+          test -x target/release/fastcpk
+          test -x target/release/fastcpk-rebuild
+      - name: Python parser, routing and stub failure-path tests
+        working-directory: switch-tools
+        run: |
+          set -euo pipefail
+          python3 -m unittest -v test_routing.py test_build_cpks.py
+      - name: Genuine FastCPK end-to-end encrypted CPK round-trip
+        working-directory: switch-tools
+        run: |
+          set -euo pipefail
+          python3 test_real_fastcpk.py \
+            --fastcpk /tmp/fastcpk/target/release/fastcpk \
+            --rebuild /tmp/fastcpk/target/release/fastcpk-rebuild \
+            | tee /tmp/nsc_fastcpk_real_report.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Switch-CPK-real-FastCPK-integration-report
+          path: /tmp/nsc_fastcpk_real_report.json
+          if-no-files-found: warn
+          retention-days: 14
