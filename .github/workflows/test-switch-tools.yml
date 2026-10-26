@@ -1,0 +1,35 @@
+name: Switch CPK Index and NSC Routing Tests
+on:
+  pull_request:
+    paths:
+      - 'switch-tools/**'
+      - '.github/workflows/test-switch-tools.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  router:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Static routing tests
+        working-directory: switch-tools
+        run: python -m unittest -v test_routing
+      - name: Validate Python sources
+        working-directory: switch-tools
+        run: python -m compileall -q .
+      - name: Export router utility
+        run: |
+          set -eu
+          mkdir -p output/switch-tools
+          cp switch-tools/{cpk_inventory.py,route_nsc.py,test_routing.py} output/switch-tools/
+          printf '%s\n' 'Requires stock Switch CPK(s); will refuse unknown, duplicate and PC-runtime assets.' > output/switch-tools/README.txt
+          cd output && zip -qr ../NSC_Switch_CPK_Router_v07.zip switch-tools
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NSC-Switch-CPK-Router-v07-source
+          path: NSC_Switch_CPK_Router_v07.zip
+          retention-days: 14
