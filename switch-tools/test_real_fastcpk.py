@@ -6,6 +6,7 @@ Uses generated CRI CPK fixtures only: no copyrighted NSC game assets are include
 import argparse
 import hashlib
 import json
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -13,6 +14,7 @@ import zipfile
 from pathlib import Path
 
 from build_cpks import build
+from auto_compile import build_auto
 from cpk_inventory import inventory
 from route_nsc import route
 
@@ -91,9 +93,27 @@ def verify_case(fastcpk, rebuild):
         }, root / "verify_b")
         assert (out / "COMPILER_REPORT.json").exists()
         assert digest(a) == stock_digest_a and digest(b) == stock_digest_b, "stock CPK modified"
+        # Auto-discovery: same real encrypted stock archives beneath RomFS/data.
+        romfs = root / "game_romfs"
+        target_a=romfs / "data" / "patch" / "170" / "common.cpk"
+        target_b=romfs / "data" / "patch" / "170" / "other.cpk"
+        target_a.parent.mkdir(parents=True)
+        shutil.copyfile(a, target_a)
+        shutil.copyfile(b, target_b)
+        auto_result=build_auto([mod],romfs,fastcpk,rebuild,root/"auto_compiled")
+        assert auto_result["auto_discovery"]["archive_count_built"] == 2
+        assert_contents(fastcpk,root/"auto_compiled"/"atmosphere/contents/010084D00CF5E000/romfs"/labels[0],{
+            "data/spc/original.xfbin":replaced_new,
+            "data/spc/untouched.xfbin":untouched
+        },root/"verify_auto_a")
+        assert_contents(fastcpk,root/"auto_compiled"/"atmosphere/contents/010084D00CF5E000/romfs"/labels[1],{
+            "data/effect/blast.xfbin":effect_new
+        },root/"verify_auto_b")
+        assert digest(target_a)==stock_digest_a and digest(target_b)==stock_digest_b
         print(json.dumps({"status":"PASS_REAL_FASTCPK",
                           "archives":len(report["archives"]),
                           "replacements":report["route_count"],
+                          "auto_discovery_archives_built":auto_result["auto_discovery"]["archive_count_built"],
                           "untouched_files_verified":sum(x["untouched_files_verified"]
                                                          for x in report["archives"]),
                           "source_sha256":{a.name:digest(a), b.name:digest(b)},
