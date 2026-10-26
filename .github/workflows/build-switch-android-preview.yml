@@ -42,3 +42,15 @@ jobs:
             switch-android/app/build/outputs/apk/debug/app-debug.apk
             switch-android/app/build/outputs/apk/debug/SHA256SUMS.txt
           retention-days: 14
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NSC-Switch-Android-v05-Source
+          path: |
+            switch-android/settings.gradle
+            switch-android/build.gradle
+            switch-android/app/build.gradle
+            switch-android/app/src/main/AndroidManifest.xml
+            switch-android/app/src/main/java/io/nsc/switchcompiler/MainActivity.java
+            switch-android/app/src/main/java/io/nsc/switchcompiler/Packager.java
+            switch-android/README.md
+          retention-days: 14
