@@ -60,6 +60,7 @@ def verify_case(fastcpk, rebuild):
         a, b = root / "stock_a.cpk", root / "stock_b.cpk"
         cmd(rebuild, "pack", left, "--output", a, "--crilayla", "--encrypt-storm")
         cmd(rebuild, "pack", right, "--output", b, "--crilayla", "--encrypt-storm")
+        stock_digest_a, stock_digest_b = digest(a), digest(b)
         ia, ib = inventory(a), inventory(b)
         assert ia["file_count"] == 2, ia
         assert ib["file_count"] == 1, ib
@@ -69,7 +70,7 @@ def verify_case(fastcpk, rebuild):
         mod = root / "test_multi_resource.nsc"
         with zipfile.ZipFile(mod, "w", compression=zipfile.ZIP_DEFLATED) as z:
             z.writestr("Resources/Files/data/spc/original.xfbin", replaced_new)
-            z.writestr("Resources/Files/data/effect/blast.xfbin", effect_new)
+            z.writestr("Resources\Files\data\effect\blast.xfbin", effect_new)
             z.writestr("mod_config.ini", "[General]\nname=CI test\n")
         routing = route([mod], [a, b])
         assert routing["status"] == "READY_FOR_CPK_REBUILD", routing
@@ -89,7 +90,7 @@ def verify_case(fastcpk, rebuild):
             "data/effect/blast.xfbin": effect_new
         }, root / "verify_b")
         assert (out / "COMPILER_REPORT.json").exists()
-        assert digest(a) == ia.get("_sha_at_start", digest(a))  # source still readable
+        assert digest(a) == stock_digest_a and digest(b) == stock_digest_b, "stock CPK modified"
         print(json.dumps({"status":"PASS_REAL_FASTCPK",
                           "archives":len(report["archives"]),
                           "replacements":report["route_count"],
