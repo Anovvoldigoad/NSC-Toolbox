@@ -70,7 +70,7 @@ def verify_case(fastcpk, rebuild):
         mod = root / "test_multi_resource.nsc"
         with zipfile.ZipFile(mod, "w", compression=zipfile.ZIP_DEFLATED) as z:
             z.writestr("Resources/Files/data/spc/original.xfbin", replaced_new)
-            z.writestr("Resources\Files\data\effect\blast.xfbin", effect_new)
+            z.writestr("Resources\\Files\\data\\effect\\blast.xfbin", effect_new)
             z.writestr("mod_config.ini", "[General]\nname=CI test\n")
         routing = route([mod], [a, b])
         assert routing["status"] == "READY_FOR_CPK_REBUILD", routing
