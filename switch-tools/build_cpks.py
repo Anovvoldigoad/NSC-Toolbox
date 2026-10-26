@@ -75,8 +75,9 @@ def build(mods,stocks,romfs,extractor,rebuilder,output,*,allow_unported=False,cr
         modfiles[path.name]=path
     parent=target.parent
     parent.mkdir(parents=True,exist_ok=True)
-    if target.is_relative_to(any_stock_parent:=stocklist[0]): # exact file comparison only
-        raise FormatError("Output directory must differ from stock CPK")
+    for stock in stocklist:
+        if stock == target or target in stock.parents:
+            raise FormatError("Output directory must not contain or replace source stock CPK")
     results=[]
     with tempfile.TemporaryDirectory(prefix="nsc_switch_multi_",dir=parent) as d:
         tmp=Path(d);ready=tmp/"ready"
@@ -88,6 +89,24 @@ def build(mods,stocks,romfs,extractor,rebuilder,output,*,allow_unported=False,cr
             extract=tmp/f"input{k}"
             run([str(exe),"--game",crypto,"-o",str(extract),str(stock)])
             root=data_root(extract)
+            # Snapshot every untouched extracted file, not only patched assets.
+            # A successful repack must preserve the complete original file set
+            # and every byte outside the explicitly selected replacements.
+            expected_stock_paths={entry["path"].casefold():entry["path"] for entry in original_index["entries"]}
+            replacing={entry["virtual_path"].casefold() for entry in manifest}
+            baseline_hashes={}
+            for path_key,virtual_path in expected_stock_paths.items():
+                source=root/virtual_path.removeprefix("data/")
+                if not source.is_file() or source.is_symlink():
+                    raise FormatError("Stock extractor did not produce indexed file: "+virtual_path)
+                if path_key not in replacing:
+                    baseline_hashes[path_key]=sha(source)
+            extracted_paths={
+                "data/"+file.relative_to(root).as_posix().casefold()
+                for file in root.rglob("*") if file.is_file()
+            }
+            if extracted_paths!=set(expected_stock_paths):
+                raise FormatError("Extracted stock path set does not match original CPK TOC")
             for entry in manifest:
                 virtual=entry["virtual_path"]
                 if not virtual.startswith("data/") or ".." in virtual.split("/"):
@@ -113,16 +132,24 @@ def build(mods,stocks,romfs,extractor,rebuilder,output,*,allow_unported=False,cr
             check=tmp/f"verify{k}"
             run([str(exe),"--game",crypto,"-o",str(check),str(rebuilt)])
             verified=data_root(check)
+            verified_paths={"data/"+file.relative_to(verified).as_posix().casefold()
+                            for file in verified.rglob("*") if file.is_file()}
+            if verified_paths!=set(expected_stock_paths):
+                raise FormatError("Re-extracted CPK has extra or missing files")
+            for virtual_key,original_digest in baseline_hashes.items():
+                path=verified/expected_stock_paths[virtual_key].removeprefix("data/")
+                if not path.is_file() or path.is_symlink() or sha(path)!=original_digest:
+                    raise FormatError("Rebuilder changed untouched stock file: "+expected_stock_paths[virtual_key])
             for entry in manifest:
                 path=verified/entry["virtual_path"].removeprefix("data/")
-                if not path.is_file() or sha(path)!=entry["sha256"]:
+                if not path.is_file() or path.is_symlink() or sha(path)!=entry["sha256"]:
                     raise FormatError("Re-extraction changed XFBIN bytes: "+entry["virtual_path"])
             dst=ready/"atmosphere"/"contents"/TITLE/"romfs"/labels[k]
             dst.parent.mkdir(parents=True,exist_ok=True)
             shutil.copyfile(rebuilt,dst)
             results.append({"from":str(stock),"romfs_target":labels[k],"sha256":sha(dst),
                             "bytes":dst.stat().st_size,"replaced":len(manifest),
-                            "verified_extracted":True})
+                            "verified_extracted":True,"untouched_files_verified":len(baseline_hashes)})
         incomplete=bool(scan["unported_runtime_dependencies"])
         report={"status":"INCOMPLETE_UNPORTED_MODDINGAPI" if incomplete else
                 "CPKS_REEXTRACT_VERIFIED_NOT_GAMEPLAY_TESTED",
